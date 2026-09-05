@@ -84,6 +84,15 @@ export const claimsApi = {
   },
 };
 
+export const donorsApi = {
+  downloadImpactReport: async (): Promise<Blob> => {
+    const res = await api.get('/donors/impact-report', {
+      responseType: 'blob',
+    });
+    return res.data;
+  },
+};
+
 export const analyticsApi = {
   getImpact: async (): Promise<{ meals_rescued: number; kg_diverted: number; active_ngos: number }> => {
     try {

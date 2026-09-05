@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import type { FoodListing, CreateListingData } from '../types';
-import { listingsApi } from '../api';
+import { listingsApi, donorsApi } from '../api';
 import { CreateListingModal } from '../components/CreateListingModal';
-import { Plus, Scale, Clock, KeyRound, AlertCircle, Trash2, CheckCircle2, RefreshCw, PackageCheck } from 'lucide-react';
+import { Plus, Scale, Clock, KeyRound, AlertCircle, Trash2, CheckCircle2, RefreshCw, PackageCheck, FileText } from 'lucide-react';
 
 export const DonorDashboard: React.FC = () => {
   const [listings, setListings] = useState<FoodListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   const fetchListings = async () => {
     try {
@@ -42,6 +43,25 @@ export const DonorDashboard: React.FC = () => {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      setIsDownloadingPdf(true);
+      const blob = await donorsApi.downloadImpactReport();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'ShareMeal_ESG_Impact_Certificate.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to download impact report');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   // Metrics (actual user data)
   const totalKg = listings.reduce((acc, curr) => acc + (curr.quantity_kg || 0), 0);
   const activeCount = listings.filter((l) => l.status === 'available' || l.status === 'reserved').length;
@@ -57,12 +77,30 @@ export const DonorDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight">Food Surplus Management</h1>
           <p className="text-xs text-slate-400">Create and monitor surplus food listings and pickup PINs.</p>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2.5 font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-md transition-colors flex items-center gap-2 text-sm"
-        >
-          <Plus className="w-4 h-4" /> Add Food Surplus
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf}
+            className="border border-slate-600 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2.5 rounded-lg flex items-center gap-2 transition disabled:opacity-50"
+          >
+            {isDownloadingPdf ? (
+              <span>Generating PDF...</span>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Impact Certificate (PDF)</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors flex items-center gap-2 text-sm"
+          >
+            <Plus className="w-4 h-4" /> Post Food Surplus
+          </button>
+        </div>
       </div>
 
       {/* Real Data Metrics Row */}

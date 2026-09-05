@@ -8,7 +8,7 @@ from app.core.database import Base, engine, get_db
 from app.core.worker import periodic_cleanup_worker
 from app.models.food_listing import FoodListing
 from app.models.user import User
-from app.routers import auth_router, listings_router, claims_router, ws_router
+from app.routers import auth_router, listings_router, claims_router, ws_router, donors_router
 
 # Create database tables automatically
 Base.metadata.create_all(bind=engine)
@@ -46,6 +46,7 @@ app.include_router(auth_router)
 app.include_router(listings_router)
 app.include_router(claims_router)
 app.include_router(ws_router)
+app.include_router(donors_router)
 
 @app.get("/")
 def root():

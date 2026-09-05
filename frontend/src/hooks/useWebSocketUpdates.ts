@@ -21,7 +21,11 @@ export const useWebSocketUpdates = (onMessage: (msg: WebSocketMessage) => void) 
       wsUrl = `${protocol}//localhost:8000/ws/updates`;
     } else if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsUrl = `${protocol}//${wsUrl}/ws/updates`;
+      wsUrl = `${protocol}//${wsUrl}`;
+    }
+
+    if (!wsUrl.endsWith('/ws/updates')) {
+      wsUrl = `${wsUrl.replace(/\/$/, '')}/ws/updates`;
     }
 
     try {
