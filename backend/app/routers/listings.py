@@ -35,6 +35,10 @@ async def create_listing(
             detail="Category must be one of: 'cooked', 'bakery', 'produce'"
         )
 
+    address = listing_in.address if listing_in.address is not None else current_user.address
+    latitude = listing_in.latitude if listing_in.latitude is not None else current_user.latitude
+    longitude = listing_in.longitude if listing_in.longitude is not None else current_user.longitude
+
     db_listing = FoodListing(
         donor_id=current_user.id,
         title=listing_in.title,
@@ -44,9 +48,9 @@ async def create_listing(
         expires_at=ensure_ist(listing_in.expires_at),
         storage_condition=listing_in.storage_condition,
         safety_temperature=listing_in.safety_temperature,
-        address=listing_in.address,
-        latitude=listing_in.latitude,
-        longitude=listing_in.longitude,
+        address=address,
+        latitude=latitude,
+        longitude=longitude,
         created_at=get_now_ist(),
         status="available",
         pickup_pin=None

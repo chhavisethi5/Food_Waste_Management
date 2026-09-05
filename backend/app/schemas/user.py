@@ -8,6 +8,9 @@ class UserBase(BaseModel):
     organization_name: str
     phone: Optional[str] = None
     role: str = Field(..., description="Role must be 'donor' or 'ngo'")
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)

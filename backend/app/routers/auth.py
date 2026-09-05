@@ -34,7 +34,10 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         hashed_password=hashed_pw,
         role=user_in.role,
         organization_name=user_in.organization_name,
-        phone=user_in.phone
+        phone=user_in.phone,
+        address=user_in.address,
+        latitude=user_in.latitude,
+        longitude=user_in.longitude
     )
     db.add(db_user)
     db.commit()

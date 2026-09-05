@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
@@ -12,6 +12,9 @@ class User(Base):
     role = Column(String, nullable=False)  # "donor" or "ngo"
     organization_name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

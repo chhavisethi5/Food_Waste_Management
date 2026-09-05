@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types';
-import { Utensils, HeartHandshake, Building2, Phone, Mail, Lock, UserPlus, ArrowRight } from 'lucide-react';
+import { Utensils, HeartHandshake, Building2, Phone, Mail, Lock, UserPlus, ArrowRight, MapPin, Navigation } from 'lucide-react';
 
 interface RegisterProps {
   onSwitchToLogin: () => void;
@@ -14,8 +14,35 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
   const [password, setPassword] = useState('');
   const [organizationName, setOrganizationName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [geoLoading, setGeoLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+        if (!address) {
+          setAddress(`Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)}`);
+        }
+        setGeoLoading(false);
+      },
+      (err) => {
+        console.warn('Geolocation error:', err);
+        setError('Could not retrieve current location');
+        setGeoLoading(false);
+      }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +55,9 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
         role,
         organization_name: organizationName,
         phone,
+        address: role === 'donor' ? address || undefined : undefined,
+        latitude: role === 'donor' ? latitude : undefined,
+        longitude: role === 'donor' ? longitude : undefined,
       });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Registration failed. Please check your information.');
@@ -129,6 +159,40 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
               </div>
             </div>
           </div>
+
+          {role === 'donor' && (
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Commercial Kitchen / Pickup Address
+                </label>
+                <button
+                  type="button"
+                  onClick={handleDetectLocation}
+                  disabled={geoLoading}
+                  className="text-xs font-medium text-emerald-400 hover:text-emerald-300 flex items-center space-x-1"
+                >
+                  <Navigation className="w-3 h-3" />
+                  <span>{geoLoading ? 'Detecting...' : 'Use Current Location'}</span>
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="e.g. 123 MG Road, Sector 4"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-md bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                />
+                <MapPin className="w-4 h-4 text-slate-500 absolute left-3 top-3 pointer-events-none" />
+              </div>
+              {latitude !== undefined && longitude !== undefined && (
+                <p className="text-[11px] text-emerald-400 mt-1 font-medium">
+                  ✓ Coordinates attached ({latitude.toFixed(4)}, {longitude.toFixed(4)})
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">

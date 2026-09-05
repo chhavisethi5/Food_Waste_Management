@@ -32,6 +32,12 @@ with engine.connect() as conn:
         conn.commit()
     except Exception:
         pass
+    for col, col_type in [("address", "VARCHAR"), ("latitude", "FLOAT"), ("longitude", "FLOAT")]:
+        try:
+            conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {col_type}"))
+            conn.commit()
+        except Exception:
+            pass
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

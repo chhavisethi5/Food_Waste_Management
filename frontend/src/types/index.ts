@@ -12,6 +12,9 @@ export interface User {
   role: UserRole;
   organization_name: string;
   phone?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
   created_at: string;
 }
 
