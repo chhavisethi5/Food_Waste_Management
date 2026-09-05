@@ -1,0 +1,254 @@
+import React, { useState } from 'react';
+import type { CreateListingData, ListingCategory } from '../types';
+import { X, Utensils, Clock, Scale, MapPin, Navigation } from 'lucide-react';
+
+interface CreateListingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: CreateListingData) => Promise<void>;
+}
+
+export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, onClose, onSubmit }) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState<ListingCategory>('cooked');
+  const [quantityKg, setQuantityKg] = useState('');
+  const [expireHours, setExpireHours] = useState('4');
+  const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+        if (!address) {
+          setAddress(`Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)}`);
+        }
+        setGeoLoading(false);
+      },
+      (err) => {
+        console.warn('Geolocation error:', err);
+        setError('Could not retrieve current location');
+        setGeoLoading(false);
+      }
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !quantityKg) {
+      setError('Please fill in required fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const hours = parseFloat(expireHours) || 4;
+      const expireDate = new Date(Date.now() + hours * 3600 * 1000);
+
+      await onSubmit({
+        title,
+        description,
+        category,
+        quantity_kg: parseFloat(quantityKg),
+        expires_at: expireDate.toISOString(),
+        address: address || undefined,
+        latitude,
+        longitude,
+      });
+
+      setTitle('');
+      setDescription('');
+      setCategory('cooked');
+      setQuantityKg('');
+      setExpireHours('4');
+      setAddress('');
+      setLatitude(undefined);
+      setLongitude(undefined);
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create food listing');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
+
+        {/* Header */}
+        <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-bold">Post Food Surplus Listing</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Enter details for non-profit organizations to view and claim</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-slate-900">
+          {error && (
+            <div className="p-3 text-xs font-semibold text-red-700 bg-red-50 rounded border border-red-200">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Food Title *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Assorted Bakery Items & Sandwiches"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3.5 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Category *
+              </label>
+              <div className="relative">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as ListingCategory)}
+                  className="w-full px-3.5 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+                >
+                  <option value="cooked">Cooked Meals</option>
+                  <option value="bakery">Bakery / Bread</option>
+                  <option value="produce">Fresh Produce</option>
+                </select>
+                <Utensils className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Quantity (KG) *
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  required
+                  value={quantityKg}
+                  onChange={(e) => setQuantityKg(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                />
+                <Scale className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Pickup Address & Geolocation */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Pickup Address / Location
+              </label>
+              <button
+                type="button"
+                onClick={handleDetectLocation}
+                disabled={geoLoading}
+                className="text-xs font-medium text-emerald-600 hover:text-emerald-700 flex items-center space-x-1"
+              >
+                <Navigation className="w-3 h-3" />
+                <span>{geoLoading ? 'Detecting...' : 'Use Current Location'}</span>
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="e.g. 123 MG Road, Sector 4"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+              />
+              <MapPin className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+            </div>
+            {latitude !== undefined && longitude !== undefined && (
+              <p className="text-[11px] text-emerald-600 mt-1 font-medium">
+                ✓ Coordinates attached ({latitude.toFixed(4)}, {longitude.toFixed(4)})
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Expiration Window
+            </label>
+            <div className="relative">
+              <select
+                value={expireHours}
+                onChange={(e) => setExpireHours(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+              >
+                <option value="2">2 Hours</option>
+                <option value="4">4 Hours</option>
+                <option value="12">12 Hours</option>
+                <option value="24">24 Hours</option>
+                <option value="48">48 Hours</option>
+              </select>
+              <Clock className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Description & Pickup Instructions
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Provide allergen notes or pickup entrance instructions..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3.5 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
+
+          <div className="pt-2 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-md disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Submitting...' : 'Publish Listing'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
