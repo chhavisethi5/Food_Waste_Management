@@ -15,10 +15,14 @@ export const useWebSocketUpdates = (onMessage: (msg: WebSocketMessage) => void) 
   }, [onMessage]);
 
   const connect = useCallback(() => {
-    // Construct WebSocket URL matching current location or dev backend
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = import.meta.env.VITE_WS_URL || 'localhost:8000';
-    const wsUrl = `${protocol}//${host}/ws/updates`;
+    let wsUrl = import.meta.env.VITE_WS_URL;
+    if (!wsUrl) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//localhost:8000/ws/updates`;
+    } else if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${wsUrl}/ws/updates`;
+    }
 
     try {
       const ws = new WebSocket(wsUrl);

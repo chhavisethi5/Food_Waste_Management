@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Database & Local State
+*.sqlite3
+*.db
+/backend/*.db
+
+# Frontend & Node
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# IDE & System
+.vscode/
+.idea/
+.DS_Store
+*.swp

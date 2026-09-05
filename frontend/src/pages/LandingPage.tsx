@@ -33,11 +33,11 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col antialiased">
-      
+
       {/* 1. Header / Navbar */}
       <header className="bg-[#0B1325] text-white sticky top-0 z-50 border-b border-slate-800">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          
+
           {/* Brand Logo */}
           <Link to="/" className="flex items-center space-x-3 cursor-pointer">
             <div className="w-8 h-8 rounded-lg bg-[#00B27A] flex items-center justify-center text-white font-bold">
@@ -79,18 +79,18 @@ export const LandingPage: React.FC = () => {
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl mx-auto px-4 mt-6 w-full space-y-12 pb-16">
-        
+
         {/* 2. Hero Section Banner */}
         <section className="bg-[#0D1527] rounded-2xl p-8 md:p-12 border border-slate-800 shadow-sm text-white space-y-6">
           <div className="space-y-3">
             <span className="text-[#00B27A] font-semibold text-xs tracking-wider uppercase block">
-              COMMERCIAL FOOD RECOVERY PLATFORM
+              TURN SURPLUS INTO MEALS
             </span>
-            <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-              Direct food recovery from commercial kitchens to local shelters.
+            <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+              Too much food. Too many people going without.
             </h1>
             <p className="text-slate-300 max-w-2xl text-sm md:text-base leading-relaxed">
-              A scheduled reservation protocol connecting licensed restaurants with verified non-profits. Listings expire automatically based on preparation time.
+              ShareMeal connects restaurants with local shelters and organizations, giving surplus food a second chance instead of letting it go to waste.
             </p>
           </div>
 
@@ -105,7 +105,7 @@ export const LandingPage: React.FC = () => {
               onClick={() => handleRoleNavigate('ngo')}
               className="border border-slate-700 hover:bg-slate-800 text-white rounded-lg px-5 py-2.5 font-medium text-sm flex items-center gap-2 transition-colors"
             >
-              <HeartHandshake className="w-4 h-4 text-[#00B27A]" /> Browse Available Batches
+              <HeartHandshake className="w-4 h-4 text-[#00B27A]" /> Browse Available Food
             </button>
           </div>
         </section>
@@ -115,7 +115,7 @@ export const LandingPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <h2 className="text-xl font-bold text-slate-900">
-                Live Available Batches
+                Live Food Listings
               </h2>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-bold">
                 {listings.length}
@@ -209,7 +209,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            
+
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-3">
               <span className="text-[11px] font-bold tracking-wider text-[#00B27A] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 inline-block">
                 01. LISTING CREATION
