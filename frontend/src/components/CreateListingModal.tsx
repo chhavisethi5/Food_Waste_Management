@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { CreateListingData, ListingCategory } from '../types';
-import { X, Utensils, Clock, Scale, MapPin, Navigation } from 'lucide-react';
+import type { CreateListingData, ListingCategory, StorageCondition } from '../types';
+import { X, Utensils, Clock, Scale, MapPin, Navigation, Thermometer, Flame, Snowflake } from 'lucide-react';
 
 interface CreateListingModalProps {
   isOpen: boolean;
@@ -13,6 +13,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<ListingCategory>('cooked');
   const [quantityKg, setQuantityKg] = useState('');
+  const [storageCondition, setStorageCondition] = useState<StorageCondition>('ambient');
+  const [safetyTemperature, setSafetyTemperature] = useState('');
   const [expireHours, setExpireHours] = useState('4');
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
@@ -22,6 +24,17 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const handleStorageConditionChange = (condition: StorageCondition) => {
+    setStorageCondition(condition);
+    if (condition === 'hot_holding') {
+      setExpireHours('2');
+    } else if (condition === 'refrigerated') {
+      if (parseFloat(expireHours) > 6) setExpireHours('4');
+    } else if (condition === 'ambient') {
+      if (parseFloat(expireHours) > 24) setExpireHours('24');
+    }
+  };
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -66,6 +79,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
         category,
         quantity_kg: parseFloat(quantityKg),
         expires_at: expireDate.toISOString(),
+        storage_condition: storageCondition,
+        safety_temperature: safetyTemperature ? parseFloat(safetyTemperature) : undefined,
         address: address || undefined,
         latitude,
         longitude,
@@ -75,6 +90,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
       setDescription('');
       setCategory('cooked');
       setQuantityKg('');
+      setStorageCondition('ambient');
+      setSafetyTemperature('');
       setExpireHours('4');
       setAddress('');
       setLatitude(undefined);
@@ -106,7 +123,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-slate-900">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-slate-900 max-h-[85vh] overflow-y-auto">
           {error && (
             <div className="p-3 text-xs font-semibold text-red-700 bg-red-50 rounded border border-red-200">
               {error}
@@ -165,6 +182,51 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
             </div>
           </div>
 
+          {/* Storage & Temperature Protocol */}
+          <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200 space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Storage Condition Protocol *</span>
+                <span className="text-[10px] text-slate-400 font-normal">Food Hygiene Standards</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleStorageConditionChange('hot_holding')}
+                  className={`px-2 py-2 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1 ${storageCondition === 'hot_holding'
+                    ? 'bg-amber-600 text-white border-amber-700'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  <span>Hot (&gt;60°C)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStorageConditionChange('refrigerated')}
+                  className={`px-2 py-2 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1 ${storageCondition === 'refrigerated'
+                    ? 'bg-blue-600 text-white border-blue-700'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
+                >
+                  <Snowflake className="w-3.5 h-3.5" />
+                  <span>Cold (&lt;5°C)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStorageConditionChange('ambient')}
+                  className={`px-2 py-2 rounded-md text-xs font-bold border transition-colors flex items-center justify-center gap-1 ${storageCondition === 'ambient'
+                    ? 'bg-slate-700 text-white border-slate-800'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
+                >
+                  <Thermometer className="w-3.5 h-3.5" />
+                  <span>Ambient</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Pickup Address & Geolocation */}
           <div>
             <div className="flex justify-between items-center mb-1">
@@ -199,8 +261,11 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-              Expiration Window
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <span>Expiration Window</span>
+              {storageCondition === 'hot_holding' && <span className="text-[10px] text-amber-600 font-bold">Capped at 4h max</span>}
+              {storageCondition === 'refrigerated' && <span className="text-[10px] text-blue-600 font-bold">Capped at 6h max</span>}
+              {storageCondition === 'ambient' && <span className="text-[10px] text-slate-500 font-bold">Capped at 24h max</span>}
             </label>
             <div className="relative">
               <select
@@ -208,11 +273,12 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({ isOpen, 
                 onChange={(e) => setExpireHours(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-md border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
               >
+                <option value="1">1 Hour</option>
                 <option value="2">2 Hours</option>
                 <option value="4">4 Hours</option>
-                <option value="12">12 Hours</option>
-                <option value="24">24 Hours</option>
-                <option value="48">48 Hours</option>
+                {storageCondition !== 'hot_holding' && storageCondition !== 'refrigerated' && <option value="6">6 Hours</option>}
+                {storageCondition === 'ambient' && <option value="12">12 Hours</option>}
+                {storageCondition === 'ambient' && <option value="24">24 Hours</option>}
               </select>
               <Clock className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>

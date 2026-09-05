@@ -15,6 +15,8 @@ export interface User {
   created_at: string;
 }
 
+export type StorageCondition = 'hot_holding' | 'refrigerated' | 'ambient';
+
 export interface FoodListing {
   id: number;
   donor_id: number;
@@ -24,6 +26,8 @@ export interface FoodListing {
   quantity_kg: number;
   expires_at: string;
   status: ListingStatus;
+  storage_condition?: StorageCondition;
+  safety_temperature?: number;
   pickup_pin?: string;
   address?: string;
   latitude?: number;
@@ -40,6 +44,7 @@ export interface Claim {
   reserved_at: string;
   reservation_expires_at?: string;
   pickup_pin?: string;
+  food_safety_acknowledged?: boolean;
   status: ClaimStatus;
   listing?: FoodListing;
   ngo?: User;
@@ -57,6 +62,8 @@ export interface CreateListingData {
   category: ListingCategory;
   quantity_kg: number;
   expires_at: string;
+  storage_condition?: StorageCondition;
+  safety_temperature?: number;
   address?: string;
   latitude?: number;
   longitude?: number;

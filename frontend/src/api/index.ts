@@ -62,12 +62,12 @@ export const listingsApi = {
 };
 
 export const claimsApi = {
-  reserveListing: async (listingId: number): Promise<Claim> => {
-    const res = await api.post(`/listings/${listingId}/reserve`);
+  reserveListing: async (listingId: number, data?: { food_safety_acknowledged?: boolean }): Promise<Claim> => {
+    const res = await api.post(`/listings/${listingId}/reserve`, data || { food_safety_acknowledged: true });
     return res.data;
   },
-  claimListing: async (listingId: number): Promise<Claim> => {
-    const res = await api.post(`/listings/${listingId}/reserve`);
+  claimListing: async (listingId: number, data?: { food_safety_acknowledged?: boolean }): Promise<Claim> => {
+    const res = await api.post(`/listings/${listingId}/reserve`, data || { food_safety_acknowledged: true });
     return res.data;
   },
   getMyClaims: async (): Promise<Claim[]> => {

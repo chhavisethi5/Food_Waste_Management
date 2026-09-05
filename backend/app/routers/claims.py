@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
 
 from app.core.database import get_db
@@ -19,6 +19,7 @@ router = APIRouter(tags=["claims"])
 @router.post("/listings/{id}/reserve", response_model=ClaimResponse, status_code=status.HTTP_201_CREATED)
 async def reserve_listing_by_id(
     id: int,
+    claim_in: Optional[ClaimCreate] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_ngo)
 ):
@@ -66,6 +67,7 @@ async def reserve_listing_by_id(
     listing.pickup_pin = pin
 
     reservation_expiry = now + timedelta(minutes=45)
+    safety_ack = claim_in.food_safety_acknowledged if claim_in is not None else True
 
     db_claim = Claim(
         listing_id=listing.id,
@@ -73,6 +75,7 @@ async def reserve_listing_by_id(
         reserved_at=now,
         reservation_expires_at=reservation_expiry,
         pickup_pin=pin,
+        food_safety_acknowledged=safety_ack,
         status="active"
     )
     db.add(db_claim)

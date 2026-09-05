@@ -14,6 +14,8 @@ class FoodListing(Base):
     quantity_kg = Column(Float, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     status = Column(String, default="available", nullable=False)  # "available", "reserved", "collected", "expired"
+    storage_condition = Column(String, default="ambient", nullable=False)  # "hot_holding", "refrigerated", "ambient"
+    safety_temperature = Column(Float, nullable=True)
     pickup_pin = Column(String(4), nullable=True)
     address = Column(String, nullable=True)
     latitude = Column(Float, nullable=True)

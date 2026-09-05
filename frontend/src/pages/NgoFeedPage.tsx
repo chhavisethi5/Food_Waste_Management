@@ -3,7 +3,7 @@ import type { FoodListing, Claim } from '../types';
 import { listingsApi, claimsApi } from '../api';
 import { useWebSocketUpdates, type WebSocketMessage } from '../hooks/useWebSocketUpdates';
 import { CountdownTimer } from '../components/CountdownTimer';
-import { Utensils, HeartHandshake, Filter, Phone, Clock, KeyRound, Building2, RefreshCw, CheckCircle2, Bell, MapPin, Navigation } from 'lucide-react';
+import { Utensils, HeartHandshake, Filter, Phone, Clock, KeyRound, Building2, RefreshCw, CheckCircle2, Bell, MapPin, Navigation, Flame, Snowflake, Thermometer, ShieldCheck } from 'lucide-react';
 
 export const NgoFeedPage: React.FC = () => {
   const [tab, setTab] = useState<'feed' | 'my-reservations'>('feed');
@@ -14,6 +14,10 @@ export const NgoFeedPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [reservingId, setReservingId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Food Safety Reservation Confirmation Modal state
+  const [confirmingListing, setConfirmingListing] = useState<FoodListing | null>(null);
+  const [foodSafetyAck, setFoodSafetyAck] = useState(false);
 
   // Geospatial filtering state
   const [userLat, setUserLat] = useState<number | null>(null);
@@ -101,11 +105,25 @@ export const NgoFeedPage: React.FC = () => {
     }
   });
 
-  const handle1ClickReserve = async (listingId: number) => {
+  const handleOpenReserveModal = (listing: FoodListing) => {
+    setConfirmingListing(listing);
+    setFoodSafetyAck(false);
+  };
+
+  const handleConfirmReserve = async () => {
+    if (!confirmingListing) return;
+    if (!foodSafetyAck) {
+      alert('Please confirm food safety transport compliance before reserving.');
+      return;
+    }
+
     try {
-      setReservingId(listingId);
-      const resClaim = await claimsApi.reserveListing(listingId);
+      setReservingId(confirmingListing.id);
+      const resClaim = await claimsApi.reserveListing(confirmingListing.id, {
+        food_safety_acknowledged: true,
+      });
       alert(`Listing Reserved! Pickup PIN: ${resClaim.listing?.pickup_pin || 'Generated'}. You have 45 minutes to complete pickup.`);
+      setConfirmingListing(null);
       setTab('my-reservations');
       fetchMyClaims();
     } catch (err: any) {
@@ -261,10 +279,33 @@ export const NgoFeedPage: React.FC = () => {
                 className="bg-white rounded-lg border border-slate-200 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-md transition-all"
               >
                 <div className="p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                      {item.category}
-                    </span>
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                        {item.category}
+                      </span>
+
+                      {/* Storage Condition Badge */}
+                      {item.storage_condition === 'hot_holding' && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                          <Flame className="w-3 h-3 text-amber-700" />
+                          <span>Hot (&gt;60°C){item.safety_temperature ? ` • ${item.safety_temperature}°C` : ''}</span>
+                        </span>
+                      )}
+                      {item.storage_condition === 'refrigerated' && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1">
+                          <Snowflake className="w-3 h-3 text-blue-700" />
+                          <span>Cold (&lt;5°C){item.safety_temperature ? ` • ${item.safety_temperature}°C` : ''}</span>
+                        </span>
+                      )}
+                      {(!item.storage_condition || item.storage_condition === 'ambient') && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+                          <Thermometer className="w-3 h-3 text-slate-500" />
+                          <span>Ambient</span>
+                        </span>
+                      )}
+                    </div>
+
                     {/* Status Badge: Green for Available */}
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
                       <Clock className="w-3 h-3 text-emerald-700" /> Available
@@ -316,7 +357,7 @@ export const NgoFeedPage: React.FC = () => {
                 {/* 1-Click Reserve Button */}
                 <div className="p-4 bg-slate-50 border-t border-slate-100">
                   <button
-                    onClick={() => handle1ClickReserve(item.id)}
+                    onClick={() => handleOpenReserveModal(item)}
                     disabled={reservingId === item.id}
                     className="w-full py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-md disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                   >
@@ -403,6 +444,66 @@ export const NgoFeedPage: React.FC = () => {
             ))}
           </div>
         )
+      )}
+
+      {/* Reservation Confirmation & Food Safety Transport Modal */}
+      {confirmingListing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Reserve Food Batch</span>
+                <h3 className="text-lg font-bold text-slate-900">{confirmingListing.title}</h3>
+                <p className="text-xs text-slate-500">{confirmingListing.quantity_kg} kg • {confirmingListing.donor?.organization_name || 'Donor'}</p>
+              </div>
+              <button onClick={() => setConfirmingListing(null)} className="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+            </div>
+
+            {/* Storage Condition Notice */}
+            <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200 space-y-1.5 text-xs text-slate-700">
+              <div className="font-bold flex items-center gap-1.5 text-slate-800">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Food Safety & Transport Compliance</span>
+              </div>
+              <p className="text-slate-600 text-[11px]">
+                Storage Condition: <strong className="capitalize text-slate-900">{confirmingListing.storage_condition || 'Ambient'}</strong>
+                {confirmingListing.safety_temperature ? ` (${confirmingListing.safety_temperature}°C)` : ''}
+              </p>
+            </div>
+
+            {/* Mandatory Checkbox */}
+            <label className="flex items-start gap-2.5 p-3.5 rounded-md bg-emerald-50/70 border border-emerald-200 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={foodSafetyAck}
+                onChange={(e) => setFoodSafetyAck(e.target.checked)}
+                className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 flex-shrink-0"
+              />
+              <span className="text-xs font-medium text-slate-800 leading-snug">
+                I confirm our NGO has insulated/temperature-controlled transport suited for this batch.
+              </span>
+            </label>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmingListing(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReserve}
+                disabled={!foodSafetyAck || reservingId === confirmingListing.id}
+                className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-md transition-colors flex items-center gap-1.5"
+              >
+                <HeartHandshake className="w-4 h-4" />
+                {reservingId === confirmingListing.id ? 'Reserving...' : 'Confirm & Reserve Batch'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

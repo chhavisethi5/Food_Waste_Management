@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, timedelta
 from app.core.database import Base
@@ -12,6 +12,7 @@ class Claim(Base):
     reserved_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     reservation_expires_at = Column(DateTime, nullable=True)
     pickup_pin = Column(String(4), nullable=True)
+    food_safety_acknowledged = Column(Boolean, default=False, nullable=False)
     status = Column(String, default="active", nullable=False)  # "active", "completed", "cancelled"
 
     # Relationships

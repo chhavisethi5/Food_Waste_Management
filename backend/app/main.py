@@ -10,8 +10,28 @@ from app.models.food_listing import FoodListing
 from app.models.user import User
 from app.routers import auth_router, listings_router, claims_router, ws_router, donors_router
 
+from sqlalchemy import text
+
 # Create database tables automatically
 Base.metadata.create_all(bind=engine)
+
+# Auto-migrate schema additions for SQLite compatibility
+with engine.connect() as conn:
+    try:
+        conn.execute(text("ALTER TABLE food_listings ADD COLUMN storage_condition VARCHAR DEFAULT 'ambient' NOT NULL"))
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute(text("ALTER TABLE food_listings ADD COLUMN safety_temperature FLOAT"))
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute(text("ALTER TABLE claims ADD COLUMN food_safety_acknowledged BOOLEAN DEFAULT 0 NOT NULL"))
+        conn.commit()
+    except Exception:
+        pass
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

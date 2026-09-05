@@ -42,6 +42,8 @@ async def create_listing(
         category=listing_in.category,
         quantity_kg=listing_in.quantity_kg,
         expires_at=ensure_ist(listing_in.expires_at),
+        storage_condition=listing_in.storage_condition,
+        safety_temperature=listing_in.safety_temperature,
         address=listing_in.address,
         latitude=listing_in.latitude,
         longitude=listing_in.longitude,
