@@ -16,7 +16,7 @@ class FoodListing(Base):
     status = Column(String, default="available", nullable=False)  # "available", "reserved", "collected", "expired"
     storage_condition = Column(String, default="ambient", nullable=False)  # "hot_holding", "refrigerated", "ambient"
     safety_temperature = Column(Float, nullable=True)
-    pickup_pin = Column(String(4), nullable=True)
+    pickup_pin = Column(String, nullable=True, default=None)
     address = Column(String, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
