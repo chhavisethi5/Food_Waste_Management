@@ -249,7 +249,6 @@ export const LandingPage: React.FC = () => {
       <footer className="bg-[#0B1325] text-slate-400 font-mono text-xs py-6 border-t border-slate-800">
         <div className="max-w-6xl mx-auto px-4 text-center space-y-2">
           <p className="text-slate-300">© 2026 ShareMeal. Commercial Food Recovery Network.</p>
-          <p className="text-[11px] text-slate-500">FastAPI • SQLAlchemy • SQLite • React • TypeScript • Tailwind CSS</p>
         </div>
       </footer>
 
