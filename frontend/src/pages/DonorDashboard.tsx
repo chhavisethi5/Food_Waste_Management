@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { FoodListing, CreateListingData } from '../types';
 import { listingsApi, donorsApi } from '../api';
 import { CreateListingModal } from '../components/CreateListingModal';
-import { Plus, Scale, Clock, KeyRound, AlertCircle, Trash2, CheckCircle2, RefreshCw, PackageCheck, FileText } from 'lucide-react';
+import { Plus, Scale, Clock, KeyRound, AlertCircle, Trash2, CheckCircle2, RefreshCw, PackageCheck } from 'lucide-react';
 
 export const DonorDashboard: React.FC = () => {
   const [listings, setListings] = useState<FoodListing[]>([]);
@@ -69,7 +69,7 @@ export const DonorDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      
+
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900 text-white p-6 rounded-lg border border-slate-800">
         <div className="space-y-1">
@@ -182,15 +182,14 @@ export const DonorDashboard: React.FC = () => {
                     </span>
 
                     {/* Status Badge - Crisp colors, no purple */}
-                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-md flex items-center gap-1 border ${
-                      item.status === 'available'
+                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-md flex items-center gap-1 border ${item.status === 'available'
                         ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                         : item.status === 'reserved'
-                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                        : item.status === 'collected'
-                        ? 'bg-slate-100 text-slate-800 border-slate-300'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}>
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : item.status === 'collected'
+                            ? 'bg-slate-100 text-slate-800 border-slate-300'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}>
                       {item.status === 'available' && <Clock className="w-3 h-3" />}
                       {item.status === 'reserved' && <AlertCircle className="w-3 h-3" />}
                       {item.status === 'collected' && <CheckCircle2 className="w-3 h-3" />}
