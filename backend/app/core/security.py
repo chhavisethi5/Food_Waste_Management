@@ -8,7 +8,17 @@ from app.core.config import settings
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     pwd_bytes = plain_password.encode("utf-8")[:72]
-    return bcrypt.checkpw(pwd_bytes, hashed_password.encode("utf-8"))
+    
+    # Ensure hashed_password is in bytes format for bcrypt
+    if isinstance(hashed_password, str):
+        hashed_bytes = hashed_password.encode("utf-8")
+    else:
+        hashed_bytes = hashed_password
+        
+    try:
+        return bcrypt.checkpw(pwd_bytes, hashed_bytes)
+    except Exception:
+        return False
 
 def get_password_hash(password: str) -> str:
     pwd_bytes = password.encode("utf-8")[:72]
