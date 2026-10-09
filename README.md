@@ -1,147 +1,111 @@
-# ShareMeal — Commercial Food Recovery & Redistribution Network
+# ShareMeal — Surplus Food Redistribution Platform
 
-A full-stack, real-time logistics platform designed to divert surplus edible food from commercial kitchens and licensed restaurants directly to verified local shelters and non-profits prior to spoilage.
+> A full-stack, real-time logistics platform connecting restaurants, bakeries, and commercial kitchens with local NGOs and shelters to eliminate food waste and fight local hunger prior to spoilage.
 
-Unlike standard e-commerce or CRUD applications, ShareMeal operates on a strict **time-to-live (TTL) reservation state machine**, enforcing food-safety temperature compliance and geospatial proximity routing.
-
-
-## 🛠️ Architecture & Tech Stack
-
-- **Backend:** FastAPI (Python 3.11+), SQLAlchemy ORM, Pydantic v2
-- **Database:** PostgreSQL / SQLite (Indexed spatial & status queries)
-- **Real-Time Communication:** Native WebSockets (Bidirectional connection management)
-- **Reporting & Document Streaming:** ReportLab (Headless binary PDF generation)
-- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
-- **Authentication & Security:** JWT (Access Tokens), Role-Based Access Control (RBAC), Passlib (Bcrypt hashing)
-
-
-##  Core Engineering Features
-
-### 1. Verification Handshake Protocol (Physical Handover Lock)
-To prevent phantom claims and ensure volunteer arrival:
-- Reserving an available listing generates a short-lived **4-digit numeric PIN** accessible solely by the recipient NGO.
-- At the time of physical handover, the donor enters this PIN into the Donor Portal.
-- The backend executes an atomic verification transaction: on PIN match, status transitions from `Reserved` to `Collected`.
-
-### 2. Time-To-Live (TTL) Lifecycle & Automated Expiration Worker
-- Food items are strictly bounded by freshness windows based on handling conditions.
-- A background scheduler evaluates active reservations:
-  - Listings uncollected beyond their reservation window automatically forfeit the reservation lock and re-queue into the public feed.
-  - Batches past their absolute cutoff time automatically transition to `Expired` status.
-
-### 3. Food Safety & Temperature Storage Compliance
-- Implemented **Pydantic `@field_validator` and `@model_validator` logic** enforcing hygiene compliance before writes reach SQL:
-  - **Hot Holding (>60°C):** Capped at a strict 4-hour distribution window.
-  - **Refrigerated (<5°C):** Capped at 6 hours.
-  - **Ambient / Dry:** Capped at 24 hours.
-- NGOs must provide a transport acknowledgment before locking the reservation.
-
-### 4. Geospatial Proximity & Radius Filtering
-- Donor physical addresses and coordinates (`lat`, `lng`) are anchored once at profile registration.
-- Haversine mathematical queries execute on the backend (`/listings?user_lat=...&user_lng=...&radius_km=X`) to filter batches dynamically based on the volunteer's current GPS position.
-
-### 5. Event-Driven Real-Time Sync (WebSockets)
-- Utilizes an in-memory `ConnectionManager` to broadcast lifecycle events across active sessions:
-  - `LISTING_CREATED`: Injects fresh batches immediately into the NGO Feed.
-  - `LISTING_RESERVED`: Updates status pills across both portals without polling.
-  - `LISTING_COLLECTED`: Flips cards into verified completion states.
-
-### 6. Dynamic ESG & Carbon Offset Reporting
-- Calculates verifiable environmental impact using international food loss baselines:
-  - **Meals Served:** $\text{Quantity (kg)} \div 0.42\text{ kg/meal}$
-  - **Emissions Offset:** $\text{Quantity (kg)} \times 2.5\text{ kg CO}_2\text{e}$
-- Directly compiles and streams downloadable monthly PDF certificates via FastAPI binary file responses.
+[![Live Demo](https://img.shields.io/badge/Demo-explore--sharemeal.vercel.app-00B27A?style=flat-square)](https://explore-sharemeal.vercel.app)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%7C%20TypeScript%20%7C%20Tailwind-blue?style=flat-square)](https://react.dev/)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.11+-009688?style=flat-square)](https://fastapi.tiangolo.com/)
 
 ---
 
-##  Project Structure
+## Live Demo & Testing Accounts
+
+Explore the live production deployment: **[https://explore-sharemeal.vercel.app](https://explore-sharemeal.vercel.app)**
+
+Use these pre-configured test credentials to evaluate both perspectives:
+
+| Role | Email | Password | Primary Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Donor (Restaurant)** | `donor.demo@sharemeal.com` | `DemoPass123!` | Post surplus batches, verify recipient PINs, export ESG impact certificates |
+| **NGO / Shelter** | `ngo.demo@sharemeal.com` | `DemoPass123!` | Filter nearby batches by GPS radius, 1-click reserve, view 4-digit pickup PIN |
+
+---
+
+## Key Features
+
+- **Role-Based Access Control (RBAC):** Distinct workflows and authenticated views for Commercial Donors vs. Verified NGO Claimants via JWT claims.
+- **Secure 4-Digit Handshake Protocol:** A transient 4-digit PIN generated upon reservation is held solely by the claiming NGO and must be physically verified by the donor to execute an atomic completion transaction.
+- **Real-Time Bidirectional Sync (WebSockets):** Instant broadcast of `LISTING_CREATED`, `LISTING_RESERVED`, and `LISTING_COLLECTED` events across all active dashboards without page refreshes or polling.
+- **Food Safety & Temperature Invariant Enforcement:** Pydantic validators enforce strict biological holding temperatures and dynamically cap maximum expiration windows (2h, 6h, 24h).
+- **Geospatial Radius Queries:** Haversine distance computations execute on the backend (`/listings?user_lat=...&user_lng=...&radius_km=X`) to sort batches by driving distance from registered donor coordinates.
+- **Automated TTL & Reservation Sweeper:** Asynchronous background tasks cancel expired reservation holds and automatically re-queue unclaimed batches.
+- **ESG & Carbon Offset PDF Export:** Headless compilation and binary streaming of monthly impact certificates using ReportLab.
+
+---
+
+## Architecture & Tech Stack
 
 ```text
-sharemeal/
-├── backend/
-│   ├── app/
-│   │   ├── core/           # Security, JWT, WebSockets ConnectionManager
-│   │   ├── models/         # SQLAlchemy database models (User, Listing, Claim)
-│   │   ├── routers/        # API route handlers (Auth, Listings, Claims, Analytics)
-│   │   ├── schemas/        # Pydantic validation schemas & business invariants
-│   │   ├── services/       # PDF generation (ReportLab) & Geo calculation utilities
-│   │   └── main.py         # App factory, CORS, and background worker scheduler
-│   └── requirements.txt
-│
-└── frontend/
-    ├── src/
-    │   ├── components/     # Modals, Navbar, Status badges
-    │   ├── hooks/          # useWebSocketUpdates, Geolocation hooks
-    │   ├── pages/          # LandingPage, DonorDashboard, NgoFeed, Login
-    │   └── App.tsx         # Route orchestration & RBAC route guards
-    ├── package.json
-    └── tailwind.config.js
-
+[ React 19 + TypeScript ]  ──(WebSockets / Axios)──►  [ FastAPI + Uvicorn ]  ──►  [ SQLite / PostgreSQL ]
+         │                                                      │
+    Vercel Host                                            Render Host
 ```
 
-##  Getting Started
+### Frontend
+- **Framework:** React 19 with TypeScript
+- **Styling:** Tailwind CSS
+- **Routing & Networking:** React Router v7, Axios (Bearer token interceptors), Native WebSocket hooks
+- **Tooling:** Vite, Oxlint
 
-### Backend Setup
-
-1. Navigate to `/backend`:
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-```
-
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-
-```
-
-
-3. Run the development server:
-```bash
-uvicorn app.main:app --reload --port 8000
-
-```
-
-
-*FastAPI Interactive Docs will be live at `http://localhost:8000/docs`.*
-
-### Frontend Setup
-
-1. Navigate to `/frontend`:
-```bash
-cd frontend
-npm install
-
-```
-
-
-2. Launch the client:
-```bash
-npm run dev
-
-```
-
-
-*Application will be available at `http://localhost:5173`.*
+### Backend
+- **Framework:** FastAPI (Python 3.11+)
+- **Database ORM:** SQLAlchemy with auto-migrating relational models
+- **Real-Time Engine:** Native WebSocket Connection Manager
+- **Authentication:** OAuth2 password flow with `bcrypt` password hashing and JWT access tokens
+- **Reporting:** ReportLab (Headless binary PDF generation and response streaming)
+- **Async Workers:** AsyncIO scheduled background lifecycle sweepers
 
 ---
 
-##  API Endpoints (Highlights)
+## Local Development Setup
 
-| Method | Endpoint | Access | Purpose |
-| --- | --- | --- | --- |
-| `POST` | `/auth/register` | Public | Register Donor (with address) or NGO |
-| `POST` | `/auth/login` | Public | Authenticate user & return JWT token |
-| `GET` | `/listings` | Public/NGO | Fetch active listings with optional radius filter |
-| `POST` | `/listings` | Donor | Create surplus batch (inherits donor location) |
-| `POST` | `/listings/{id}/reserve` | NGO | Claim food & generate 4-digit pickup PIN |
-| `POST` | `/listings/{id}/verify-pickup` | Donor | Input NGO PIN to finalize handover |
-| `GET` | `/donors/impact-report` | Donor | Stream dynamic ESG Impact PDF certificate |
-| `WS` | `/ws/updates` | Authenticated | Live bidirectional status broadcasting |
+### 1. Prerequisites
+- Node.js 20+
+- Python 3.11+
+- Git
 
+### 2. Backend Setup
+```bash
+# Clone the repository
+git clone https://github.com/chhavisethi5/Food_Waste_Management.git
+cd Food_Waste_Management/backend
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run FastAPI server
+uvicorn app.main:app --reload --port 8000
 ```
+*API interactive documentation will be available at `http://localhost:8000/docs`.*
 
+### 3. Frontend Setup
+```bash
+# In a new terminal window
+cd Food_Waste_Management/frontend
+
+# Install dependencies
+npm install
+
+# Start Vite development server
+npm run dev
 ```
+*Frontend will be running at `http://localhost:5173`.*
+
+---
+
+## API Endpoints (Highlights)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/auth/register` | Public | Registers Donor (with kitchen GPS) or NGO |
+| `POST` | `/auth/login` | Public | Issues JWT access token |
+| `GET` | `/listings` | Authenticated | Fetches available listings filtered by radius & category |
+| `POST` | `/listings` | Donor | Posts surplus food with temperature & handling bounds |
+| `POST` | `/listings/{id}/reserve` | NGO | Claims batch, locks TTL timer, and generates pickup PIN |
+| `POST` | `/listings/{id}/verify-pickup` | Donor | Validates NGO PIN and completes physical handover |
+| `GET` | `/donors/impact-report` | Donor | Streams generated monthly ESG Impact PDF certificate |
+| `WS` | `/ws/updates` | Authenticated | Live event bus for real-time feed updates |
